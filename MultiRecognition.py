@@ -118,10 +118,10 @@ class MultiRecognition(object):
                     degradation = 0
                     best_loss = epoch_loss
                     print('curent best_loss ', best_loss)
-                    self.save('/Bestrecognitron.pth')
+                    self.save('/BestRecognitron.pth')
                 else:
                     counter += 1
-                    self.save('/Regualarrecognitron.pth')
+                    self.save('/RegualarRecognitron.pth')
 
             if counter > TRYING_LR * 2:
                 for param_group in self.optimizer.param_groups:
@@ -147,8 +147,8 @@ class MultiRecognition(object):
             self.recognitron.load_state_dict(torch.load(modelPath))
             print('load recognitron model')
         else:
-            self.recognitron.load_state_dict(torch.load(self.modelPath + 'Bestrecognitron.pth'))
-            print('load Bestrecognitron ')
+            self.recognitron.load_state_dict(torch.load(self.modelPath + 'BestRecognitron.pth'))
+            print('load BestRecognitron ')
         print(len(test_loader.dataset))
         i = 0
         since = time.time()
@@ -168,12 +168,12 @@ class MultiRecognition(object):
             outputs = self.recognitron(inputs)
             loss = self.criterion(outputs, targets)
             running_loss += loss.data[0] * inputs.size(0)
-            print(' targets ', float(targets.data[0]), ' outputs ', float(outputs.data[0]), ' loss ', float(loss.data[0]))
+            print(' targets ', targets.data[0], ' outputs ', outputs.data[0], ' loss ', float(loss.data[0]))
             i += 1
-            if float(outputs.data[0]) > float(0.8):
+            if float(loss.data[0].data[0]) < float(0.2):
                 path = self.images + "/good/Input_OutPut_Target_" + str(i) + '_' + str(outputs.data[0]) + '.png'
                 torchvision.utils.save_image(inputs.data, path)
-            elif float(outputs.data[0]) < float(0.2):
+            else:
                 path = self.images + "/bad/Input_OutPut_Target_" + str(i) + '_' + str(outputs.data[0]) + '.png'
                 torchvision.utils.save_image(inputs.data, path)
             _stdout = sys.stdout
@@ -193,8 +193,8 @@ class MultiRecognition(object):
 
     def save(self, model):
         self.recognitron = self.recognitron.cpu()
-        self.recognitron.eval()
+        #self.recognitron.eval()
         torch.save(self.recognitron.state_dict(), self.modelPath + '/' + model)
         if self.use_gpu:
             self.recognitron = self.recognitron.cuda()
-        self.recognitron.train()
+        #self.recognitron.train()

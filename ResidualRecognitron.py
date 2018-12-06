@@ -33,9 +33,10 @@ class ResidualRecognitron(nn.Module):
         num_ftrs = self.model.fc.in_features
         print ('! fc.in_features ', num_ftrs)
         sub_dimension = int(math.sqrt(num_ftrs))
-        reduce_number = sub_dimension if sub_dimension > dimension else dimension
+        av_dimension = int( float(dimension + num_ftrs) /2.0)
+        reduce_number = sub_dimension if sub_dimension > av_dimension else av_dimension
         self.model.fc = nn.Sequential(
-            activation,
+            #activation,
             nn.Dropout(p=0.5),
             nn.Linear(num_ftrs, reduce_number),
             activation,
