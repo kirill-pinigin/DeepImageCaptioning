@@ -21,6 +21,8 @@ class MultiRecognition(object):
         self.dataloaders = dataloaders
 
         config = str(recognitron.__class__.__name__) + '_' + str(recognitron.activation.__class__.__name__) #+ '_' + str(recognitron.norm1.__class__.__name__)
+        if str(recognitron.__class__.__name__) == 'ResidualRecognitron':
+            config += str(recognitron.model.conv1)
         config += '_' + str(criterion.__class__.__name__)
         config += "_" + str(optimizer.__class__.__name__) #+ "_lr_" + str( optimizer.param_groups[0]['lr'])
 

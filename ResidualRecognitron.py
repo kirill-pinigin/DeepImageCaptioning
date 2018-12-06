@@ -38,10 +38,10 @@ class ResidualRecognitron(nn.Module):
         self.model.fc = nn.Sequential(
             #activation,
             nn.Dropout(p=0.5),
-            nn.Linear(num_ftrs, reduce_number),
-            activation,
-            nn.Dropout(p=0.5),
-            nn.Linear(reduce_number, dimension),
+            nn.Linear(num_ftrs, dimension),
+            #activation,
+           # nn.Dropout(p=0.5),
+           # nn.Linear(reduce_number, dimension),
             nn.Sigmoid(),
         )
 

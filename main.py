@@ -17,15 +17,16 @@ parser.add_argument('--recognitron',    type = str,   default='ResidualRecognitr
 parser.add_argument('--activation',     type = str,   default='SiLU', help='type of activation')
 parser.add_argument('--criterion',      type = str,   default='BCE', help='type of criterion')
 parser.add_argument('--optimizer',      type = str,   default='Adam', help='type of optimizer')
-parser.add_argument('--lr',             type = float, default='1e-4')
+parser.add_argument('--lr',             type = float, default='1e-5')
 parser.add_argument('--split',          type = float, default='0.0')
 parser.add_argument('--dimension',      type = int,   default='35')
 parser.add_argument('--channels',       type = int,   default='1')
-parser.add_argument('--image_size',     type = int,   default='256')
 parser.add_argument('--batch_size',     type = int,   default='32')
 parser.add_argument('--epochs',         type = int,   default='201')
 parser.add_argument('--augmentation',   type = bool,  default='True', help='type of training')
 parser.add_argument('--pretrained',     type = bool,  default='True', help='type of training')
+
+IMAGE_SIZE = 256
 
 print(torch.__version__)
 args = parser.parse_args()
@@ -64,14 +65,13 @@ criterion = (criterion_types[args.criterion] if args.criterion in criterion_type
 
 train_transforms_list =[
         transforms.RandomHorizontalFlip(),
-        #transforms.RandomRotation(degrees = 20),
-        #transforms.RandomVerticalFlip(),
-        transforms.Resize((args.image_size, args.image_size), interpolation=3),
+        transforms.RandomRotation(degrees = 20),
+        transforms.Resize((IMAGE_SIZE, IMAGE_SIZE), interpolation=3),
         transforms.ToTensor(),
         ]
 
 val_transforms_list = [
-        transforms.Resize((args.image_size, args.image_size), interpolation=3),
+        transforms.Resize((IMAGE_SIZE, IMAGE_SIZE), interpolation=3),
         transforms.ToTensor(),
         ]
 
