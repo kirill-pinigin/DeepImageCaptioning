@@ -28,20 +28,18 @@ class ResidualRecognitron(nn.Module):
                 weight[i, :, :, :] = parameters[0].data[i].mean(0)
             conv.weight.data.copy_(weight)
             self.model.conv1 = conv
+
         self.model.relu = activation
-        self.model.avgpool = nn.AvgPool2d(8, stride=1)
         num_ftrs = self.model.fc.in_features
         print ('! fc.in_features ', num_ftrs)
         sub_dimension = int(math.sqrt(num_ftrs))
         av_dimension = int( float(dimension + num_ftrs) /2.0)
         reduce_number = sub_dimension if sub_dimension > av_dimension else av_dimension
         self.model.fc = nn.Sequential(
-            #activation,
+            nn.Linear(num_ftrs, reduce_number),
+            activation,
             nn.Dropout(p=0.5),
-            nn.Linear(num_ftrs, dimension),
-            #activation,
-           # nn.Dropout(p=0.5),
-           # nn.Linear(reduce_number, dimension),
+            nn.Linear(reduce_number, dimension),
             nn.Sigmoid(),
         )
 
