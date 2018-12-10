@@ -100,7 +100,7 @@ class MultiRecognition(object):
                         loss.backward()
                         self.optimizer.step()
 
-                    running_loss += loss.data[0] * inputs.size(0)
+                    running_loss += loss.item() * inputs.size(0)
 
                 epoch_loss = float(running_loss) / float(len(self.dataloaders[phase].dataset))
 
@@ -169,10 +169,10 @@ class MultiRecognition(object):
                 inputs, targets = Variable(inputs), Variable(targets)
             outputs = self.recognitron(inputs)
             loss = self.criterion(outputs, targets)
-            running_loss += loss.data[0] * inputs.size(0)
-            print(' targets ', targets.data[0], ' outputs ', outputs.data[0], ' loss ', float(loss.data[0]))
+            running_loss += loss.item() * inputs.size(0)
+            print(' targets ', targets.item(), ' outputs ', outputs.item(), ' loss ', float(loss.item()))
             i += 1
-            if float(loss.data[0].data[0]) < float(0.2):
+            if float(loss.item()) < float(0.2):
                 path = self.images + "/good/Input_OutPut_Target_" + str(i) + '_' + str(outputs.data[0]) + '.png'
                 torchvision.utils.save_image(inputs.data, path)
             else:
@@ -181,7 +181,7 @@ class MultiRecognition(object):
             _stdout = sys.stdout
             sys.stdout = self.report
             print(
-            ' targets ', float(targets.data[0]), ' outputs ', float(outputs.data[0]), ' loss ', float(loss.data[0]))
+            ' targets ', float(targets.item()), ' outputs ', float(outputs.item()), ' loss ', float(loss.item()))
             self.report.flush()
             sys.stdout = _stdout
 

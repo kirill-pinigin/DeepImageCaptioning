@@ -2,7 +2,6 @@ import math
 import torch
 import torch.nn as nn
 
-import torch.nn.functional as F
 from torchvision import models
 
 
@@ -11,7 +10,7 @@ class SiLU(torch.nn.Module):
         super(SiLU, self).__init__()
 
     def forward(self, x):
-        out = torch.mul(x, F.sigmoid(x))
+        out = torch.mul(x, torch.sigmoid(x))
         return out
 
 
