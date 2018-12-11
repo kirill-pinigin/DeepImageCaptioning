@@ -9,11 +9,12 @@ from  CSVDataset import  CSVDataset , make_dataloaders
 
 from MultiRecognition import MultiRecognition
 from ResidualRecognitron import  ResidualRecognitron, SiLU
+from SqueezeRecognitrons import  SqueezeResidualRecognitron
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir',       type = str,   default='/home/user/CocoDatasetTags/', help='path to dataset')
 parser.add_argument('--result_dir',     type = str,   default='./RESULTS/', help='path to result')
-parser.add_argument('--recognitron',    type = str,   default='ResidualRecognitron', help='type of image generator')
+parser.add_argument('--recognitron',    type = str,   default='SqueezeResidualRecognitron', help='type of image generator')
 parser.add_argument('--activation',     type = str,   default='SiLU', help='type of activation')
 parser.add_argument('--criterion',      type = str,   default='BCE', help='type of criterion')
 parser.add_argument('--optimizer',      type = str,   default='Adam', help='type of optimizer')
@@ -31,7 +32,8 @@ IMAGE_SIZE = 224
 print(torch.__version__)
 args = parser.parse_args()
 
-recognitron_types = { 'ResidualRecognitron'         : ResidualRecognitron,
+recognitron_types = {   'ResidualRecognitron'                : ResidualRecognitron,
+                        'SqueezeResidualRecognitron'         : SqueezeResidualRecognitron,
                     }
 
 activation_types = {'ReLU'     : nn.ReLU(),
@@ -65,9 +67,7 @@ criterion = (criterion_types[args.criterion] if args.criterion in criterion_type
 
 train_transforms_list =[
         transforms.RandomHorizontalFlip(),
-        transforms.RandomVerticalFlip(),
-        #transforms.Resize((256, 256), interpolation=3),
-        #transforms.RandomCrop((IMAGE_SIZE, IMAGE_SIZE)),
+        #transforms.Resize((256, 256), interpolation=3), transforms.RandomCrop((IMAGE_SIZE, IMAGE_SIZE)),
         transforms.Resize((IMAGE_SIZE, IMAGE_SIZE), interpolation=3),
         transforms.ToTensor(),
         ]
