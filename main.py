@@ -65,9 +65,10 @@ criterion = (criterion_types[args.criterion] if args.criterion in criterion_type
 
 train_transforms_list =[
         transforms.RandomHorizontalFlip(),
-        transforms.Resize((256, 256), interpolation=3),
-        transforms.RandomCrop((IMAGE_SIZE, IMAGE_SIZE)),
-        #transforms.Resize((IMAGE_SIZE, IMAGE_SIZE), interpolation=3),
+        transforms.RandomVerticalFlip(),
+        #transforms.Resize((256, 256), interpolation=3),
+        #transforms.RandomCrop((IMAGE_SIZE, IMAGE_SIZE)),
+        transforms.Resize((IMAGE_SIZE, IMAGE_SIZE), interpolation=3),
         transforms.ToTensor(),
         ]
 

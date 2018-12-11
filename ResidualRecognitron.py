@@ -1,4 +1,3 @@
-import math
 import torch
 import torch.nn as nn
 
@@ -30,15 +29,8 @@ class ResidualRecognitron(nn.Module):
 
         self.model.relu = activation
         num_ftrs = self.model.fc.in_features
-        print ('! fc.in_features ', num_ftrs)
-        sub_dimension = int(math.sqrt(num_ftrs))
-        av_dimension = int( float(dimension + num_ftrs) /2.0)
-        reduce_number = sub_dimension if sub_dimension > av_dimension else av_dimension
         self.model.fc = nn.Sequential(
-            nn.Linear(num_ftrs, reduce_number),
-            activation,
-            nn.Dropout(p=0.5),
-            nn.Linear(reduce_number, dimension),
+            nn.Linear(num_ftrs, dimension),
             nn.Sigmoid(),
         )
 
