@@ -12,12 +12,11 @@ DEGRADATION_TOLERANCY = 5
 ACCURACY_TRESHOLD = float(0.0625)
 
 class MultiRecognition(object):
-    def __init__(self, recognitron,  criterion, optimizer, dataloaders, directory, num_epochs=501):
+    def __init__(self, recognitron,  criterion, optimizer, dataloaders, directory):
         self.recognitron = recognitron
         self.criterion = criterion
         self.optimizer = optimizer
         self.use_gpu = torch.cuda.is_available()
-        self.num_epochs = num_epochs
         self.dataloaders = dataloaders
 
         config = str(recognitron.__class__.__name__) + '_' + str(recognitron.activation.__class__.__name__) #+ '_' + str(recognitron.norm1.__class__.__name__)
@@ -55,29 +54,27 @@ class MultiRecognition(object):
         sys.stdout = _stdout
         if self.use_gpu :
             self.recognitron = self.recognitron.cuda()
-            #self.criterion = self.criterion.cuda()
 
     def __del__(self):
         self.report.close()
 
-    def train(self):
+    def train(self, num_epochs = 20):
         since = time.time()
         best_loss = 10000.0
         counter = 0
         i = int(0)
         degradation = 0
-        for epoch in range(self.num_epochs):
+        for epoch in range(num_epochs):
             _stdout = sys.stdout
             sys.stdout = self.report
-            print('Epoch {}/{}'.format(epoch, self.num_epochs - 1))
+            print('Epoch {}/{}'.format(epoch, num_epochs - 1))
             print('-' * 10)
             self.report.flush()
             sys.stdout = _stdout
-            print('Epoch {}/{}'.format(epoch, self.num_epochs - 1))
+            print('Epoch {}/{}'.format(epoch, num_epochs - 1))
             print('-' * 10)
 
             for phase in ['train', 'val']:
-                #self.dataloaders[phase].dataset.phase = phase
                 if phase == 'train':
                     self.recognitron.train(True)
                 else:
@@ -170,7 +167,8 @@ class MultiRecognition(object):
             outputs = self.recognitron(inputs)
             loss = self.criterion(outputs, targets)
             running_loss += loss.item() * inputs.size(0)
-            print(' targets ', targets, ' outputs ', outputs, ' loss ', float(loss))
+            #print(' target  ',  targets, ' \n outputs',  torch.round(outputs)  , '\n loss ', float(loss))
+            print(' target   - outputs', targets - torch.round(outputs), '\n loss ', float(loss))
             i += 1
 
         epoch_loss = float(running_loss) / float(len(test_loader.dataset))
