@@ -3,9 +3,8 @@ import os
 import torch
 import torch.optim as optim
 import torch.nn as nn
-import torch.nn.functional as F
 import torchvision.transforms as transforms
-from  CSVDataset import  CSVDataset , make_dataloaders
+from  CSVDataset import  CSVDataset
 
 from MultiRecognition import MultiRecognition
 from ResidualRecognitron import  ResidualRecognitron, SiLU
@@ -31,35 +30,37 @@ parser.add_argument('--fine_tuning',       type = bool,  default='True', help='t
 
 IMAGE_SIZE = 224
 
-print(torch.__version__)
 args = parser.parse_args()
 
-recognitron_types = {   'ResidualRecognitron'                : ResidualRecognitron,
+recognitron_types = {
+                        'ResidualRecognitron'                : ResidualRecognitron,
                         'SqueezeResidualRecognitron'         : SqueezeResidualRecognitron,
                     }
 
-activation_types = {'ReLU'     : nn.ReLU(),
+activation_types = {
+                    'ReLU'     : nn.ReLU(),
                     'LeakyReLU' : nn.LeakyReLU(),
                     'PReLU'    : nn.PReLU(),
                     'ELU'      : nn.ELU(),
                     'SELU'     : nn.SELU(),
                     'SiLU'     : SiLU()
-              }
+                    }
 
-criterion_types = {
+criterion_types =   {
                     'MSE' : nn.MSELoss(),
                     'L1'  : nn.L1Loss(),
                     'BCE' : nn.BCELoss(),
                     'MultiLabelSoftMarginLoss' : nn.MultiLabelSoftMarginLoss(),
                     }
 
-optimizer_types = {
+optimizer_types =   {
                     'Adam'           : optim.Adam,
                     'RMSprop'       : optim.RMSprop,
                     'SGD'           : optim.SGD
                     }
 
 model = (recognitron_types[args.recognitron] if args.recognitron in recognitron_types else recognitron_types['ResidualRecognitron'])
+
 function = (activation_types[args.activation] if args.activation in activation_types else activation_types['ReLU'])
 
 recognitron = model(dimension=args.dimension , channels=args.channels, activation=function, pretrained=args.pretrained + args.transfer_learning + args.fine_tuning)
