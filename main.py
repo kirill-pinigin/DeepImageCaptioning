@@ -97,6 +97,7 @@ framework = MultiRecognition(recognitron = recognitron, criterion = criterion, o
 
 if args.transfer_learning:
     framework.recognitron.freeze()
+
 framework.train(num_epochs=args.epochs)
 
 if args.fine_tuning:

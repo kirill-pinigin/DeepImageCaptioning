@@ -50,4 +50,4 @@ class ResidualRecognitron(nn.Module):
 
     def unfreeze(self):
         for param in self.model.parameters():
-            param.requires_grad = False
+            param.requires_grad = True
