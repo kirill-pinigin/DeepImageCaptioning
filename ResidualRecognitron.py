@@ -29,10 +29,25 @@ class ResidualRecognitron(nn.Module):
 
         self.model.relu = activation
         num_ftrs = self.model.fc.in_features
+        reduce_number = int ((num_ftrs + dimension)/2.0)
+        sub_dimension = reduce_number if reduce_number < dimension else (reduce_number + dimension)
         self.model.fc = nn.Sequential(
-            nn.Linear(num_ftrs, dimension),
+            nn.Linear(num_ftrs, sub_dimension),
+            activation,
+            nn.Dropout(p=0.5),
+            nn.Linear(sub_dimension, dimension),
             nn.Sigmoid(),
         )
 
     def forward(self, x):
         return self.model(x)
+
+    def freeze(self):
+        for param in self.model.parameters():
+            param.requires_grad = False
+        for param in self.model.fc.parameters():
+            param.requires_grad = True
+
+    def unfreeze(self):
+        for param in self.model.parameters():
+            param.requires_grad = False
