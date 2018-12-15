@@ -27,6 +27,7 @@ class CSVDataset(Dataset):
         self.channels = channels
         self.transforms = transforms
         self.data_info = pd.read_csv(csv_path, header=0)
+        self.tags_list = self.data_info.columns.tolist()
         self.image_arr = np.asarray(self.data_info.iloc[:, 0])
         self.label_arr = np.asarray(self.data_info.iloc[:, 1:])
         self.data_len = len(self.data_info.index)
@@ -40,6 +41,12 @@ class CSVDataset(Dataset):
 
     def __len__(self):
         return self.data_len
+
+    def tags(self):
+        return self.tags_list[1:]
+
+    def files(self):
+        return self.image_arr
 
 def make_dataloaders (dataset, batch_size, splitratio = 0.2):
     print(' split ratio ', splitratio)

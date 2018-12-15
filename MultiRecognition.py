@@ -58,9 +58,14 @@ class MultiRecognition(object):
     def __del__(self):
         self.report.close()
 
-    def train(self, num_epochs = 20):
+    def train(self, num_epochs = 20, resume_train = False):
+        if resume_train and os.path.isfile(self.modelPath + 'BestRecognitron.pth'):
+            print( "RESUME training load BestRecognitron")
+            self.recognitron.load_state_dict(torch.load(self.modelPath + 'BestRecognitron.pth'))
+
         since = time.time()
         best_loss = 10000.0
+        best_acc = 0.0
         counter = 0
         i = int(0)
         degradation = 0
@@ -81,7 +86,7 @@ class MultiRecognition(object):
                     self.recognitron.train(False)
 
                 running_loss = 0.0
-
+                running_corrects = 0
                 for data in self.dataloaders[phase]:
                     inputs, targets = data
                     if self.use_gpu:
@@ -92,24 +97,27 @@ class MultiRecognition(object):
                     self.optimizer.zero_grad()
 
                     outputs = self.recognitron(inputs)
+                    diff = torch.abs(targets.data - torch.round(outputs.data))
                     loss = self.criterion(outputs, targets)
                     if phase == 'train':
                         loss.backward()
                         self.optimizer.step()
 
                     running_loss += loss.item() * inputs.size(0)
+                    running_corrects += (1.0 - torch.sum(diff)/float(diff.shape[1]*diff.shape[0])) * inputs.size(0)
 
                 epoch_loss = float(running_loss) / float(len(self.dataloaders[phase].dataset))
+                epoch_acc = float(running_corrects) / float(len(self.dataloaders[phase].dataset))
 
                 _stdout = sys.stdout
                 sys.stdout = self.report
-                print('{} Loss: {:.4f} '.format(
-                    phase, epoch_loss))
+                print('{} Loss: {:.4f} Accuracy {:.4f} '.format(
+                    phase, epoch_loss, epoch_acc))
                 self.report.flush()
 
                 sys.stdout = _stdout
-                print('{} Loss: {:.4f} '.format(
-                    phase, epoch_loss))
+                print('{} Loss: {:.4f} Accuracy {:.4f} '.format(
+                    phase, epoch_loss, epoch_acc))
                 self.report.flush()
 
                 if phase == 'val' and epoch_loss < best_loss:
@@ -156,6 +164,7 @@ class MultiRecognition(object):
         if self.use_gpu:
             self.recognitron = self.recognitron.cuda()
         running_loss = 0.0
+        running_corrects = 0
         for data in test_loader:
             inputs, targets = data
 
@@ -165,19 +174,20 @@ class MultiRecognition(object):
             else:
                 inputs, targets = Variable(inputs), Variable(targets)
             outputs = self.recognitron(inputs)
+            diff = torch.abs(targets.data - torch.round(outputs.data))
             loss = self.criterion(outputs, targets)
             running_loss += loss.item() * inputs.size(0)
-            #print(' target  ',  targets, ' \n outputs',  torch.round(outputs)  , '\n loss ', float(loss))
-            print(' target   - outputs', targets - torch.round(outputs), '\n loss ', float(loss))
-            i += 1
+            running_corrects += (1.0 - torch.sum(diff) / float(diff.shape[1] * diff.shape[0])) * inputs.size(0)
 
         epoch_loss = float(running_loss) / float(len(test_loader.dataset))
+        epoch_acc = float(running_corrects) / float(len(test_loader.dataset))
 
         time_elapsed = time.time() - since
 
         print('Evaluating complete in {:.0f}m {:.0f}s'.format(
             time_elapsed // 60, time_elapsed % 60))
-        print('epoch_loss: {:4f}'.format(epoch_loss))
+        print('Loss: {:.4f} Accuracy {:.4f} '.format( epoch_loss, epoch_acc))
+        #self.report.flush()
 
     def save(self, model):
         self.recognitron = self.recognitron.cpu()
