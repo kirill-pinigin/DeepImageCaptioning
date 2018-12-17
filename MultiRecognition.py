@@ -191,8 +191,37 @@ class MultiRecognition(object):
 
     def save(self, model):
         self.recognitron = self.recognitron.cpu()
-        #self.recognitron.eval()
         torch.save(self.recognitron.state_dict(), self.modelPath + '/' + model)
         if self.use_gpu:
             self.recognitron = self.recognitron.cuda()
-        #self.recognitron.train()
+
+import numpy as np
+
+class MultiLabelLoss(torch.nn.Module):
+    def __init__(self, channels =3):
+        super(MultiLabelLoss, self).__init__()
+        self.criterion = torch.nn.BCELoss()
+        self.penalty = torch.nn.L1Loss()
+        self.loss = None
+
+    def forward(self, input, target):
+        p = input.data.cpu().numpy()
+        t = target.data.cpu().numpy()
+        #positive_input = Variable(torch.from_numpy(p[np.nonzero(t)]))
+        #positive_target = Variable(torch.from_numpy(t[np.nonzero(t)]))
+        negative_input = Variable(torch.from_numpy(p[np.where(t == 0)]))
+        negative_target = Variable(torch.from_numpy(t[np.where(t == 0)]))
+        if torch.cuda.is_available():
+            #positive_input  = positive_input .cuda()
+            #positive_target = positive_target.cuda()
+            negative_input  = negative_input .cuda()
+            negative_target = negative_target.cuda()
+
+        bce_loss = self.criterion(input, target)
+        #false_positive_penalty = self.penalty(positive_input, positive_target)
+        false_negative_penalty= self.penalty(negative_input, negative_target)
+        self.loss =  bce_loss + false_negative_penalty
+        return self.loss
+
+    def backward(self, retain_variables=True):
+        return self.loss.backward(retain_variables=retain_variables)
