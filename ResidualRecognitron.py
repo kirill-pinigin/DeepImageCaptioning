@@ -37,7 +37,6 @@ class ResidualRecognitron(nn.Module):
         if type_norm == 'instance':
             self.model.bn1 = nn.InstanceNorm1d(64)
 
-        self.model.relu = activation
         self.model.avgpool = nn.AvgPool2d(7)
         num_ftrs = self.model.fc.in_features
         reduce_number = int ((num_ftrs + dimension)/2.0)
