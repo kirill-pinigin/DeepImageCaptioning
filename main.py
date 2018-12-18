@@ -6,7 +6,7 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 from  CSVDataset import  CSVDataset
 
-from MultiRecognition import MultiRecognition , MultiLabelLoss
+from MultiRecognition import MultiRecognition , MultiLabelLoss, IMAGE_SIZE, CHANNELS
 from ResidualRecognitron import  ResidualRecognitron, SiLU
 from SqueezeRecognitrons import  SqueezeResidualRecognitron
 
@@ -16,21 +16,21 @@ parser.add_argument('--result_dir',        type = str,   default='./RESULTS/', h
 parser.add_argument('--recognitron',       type = str,   default='ResidualRecognitron', help='type of image generator')
 parser.add_argument('--activation',        type = str,   default='ReLU', help='type of activation')
 parser.add_argument('--criterion',         type = str,   default='MultiLabelLoss', help='type of criterion')
-parser.add_argument('--optimizer',         type = str,   default='RMSp', help='type of optimizer')
+parser.add_argument('--optimizer',         type = str,   default='Adam', help='type of optimizer')
 parser.add_argument('--type_norm',         type = str,   default='batch', help='type of optimizer')
 parser.add_argument('--lr',                type = float, default=2e-5)
 parser.add_argument('--split',             type = float, default=0.0)
 parser.add_argument('--dimension',         type = int,   default=35)
-parser.add_argument('--channels',          type = int,   default=3)
 parser.add_argument('--batch_size',        type = int,   default=32)
-parser.add_argument('--epochs',            type = int,   default=33)
+parser.add_argument('--epochs',            type = int,   default=32)
 parser.add_argument('--augmentation',      type = bool,  default=True)
 parser.add_argument('--pretrained',        type = bool,  default=True)
 parser.add_argument('--transfer_learning', type = bool,  default=True)
 parser.add_argument('--fine_tuning',       type = bool,  default=True)
-parser.add_argument('--resume_train',      type = bool,  default=False)
+parser.add_argument('--resume_train',      type = bool,  default=True)
 
-IMAGE_SIZE = 224
+#IMAGE_SIZE = 224
+#CHANNELS = 3
 
 args = parser.parse_args()
 
@@ -66,34 +66,34 @@ model = (recognitron_types[args.recognitron] if args.recognitron in recognitron_
 
 function = (activation_types[args.activation] if args.activation in activation_types else activation_types['ReLU'])
 
-recognitron = model(dimension=args.dimension , channels=args.channels, activation=function, type_norm = args.type_norm,
+recognitron = model(dimension=args.dimension , channels=CHANNELS, activation=function, type_norm = args.type_norm,
                     pretrained=args.pretrained + args.transfer_learning + args.fine_tuning)
 
 optimizer =(optimizer_types[args.optimizer] if args.optimizer in optimizer_types else optimizer_types['Adam'])(recognitron.parameters(), lr = args.lr)
 
 criterion = (criterion_types[args.criterion] if args.criterion in criterion_types else criterion_types['MSE'])
 
-train_transforms_list =[
-        transforms.RandomHorizontalFlip(),
-        transforms.ColorJitter(0.1, 0.1, 0.1, 0.1),
-        #transforms.Resize((240, 240), interpolation=3), transforms.RandomCrop((IMAGE_SIZE, IMAGE_SIZE)),
-        transforms.Resize((IMAGE_SIZE, IMAGE_SIZE), interpolation=3),
-        transforms.ToTensor(),
-        ]
-
 val_transforms_list = [
         transforms.Resize((IMAGE_SIZE, IMAGE_SIZE), interpolation=3),
         transforms.ToTensor(),
         ]
+
+train_transforms_list = val_transforms_list
+
+if args.augmentation:
+    train_transforms_list = [transforms.RandomHorizontalFlip(),transforms.ColorJitter(0.1, 0.1, 0.1, 0.1),] + val_transforms_list
+
 
 data_transforms = {
     'train':    transforms.Compose(train_transforms_list ),
     'val':      transforms.Compose(val_transforms_list),
 }
 
+print(data_transforms)
+
 shuffle_list = { 'train' : True, 'val' : False}
 
-image_datasets = {x: CSVDataset(os.path.join(args.data_dir, x), os.path.join(args.data_dir, x+'_tags.csv'), args.channels,
+image_datasets = {x: CSVDataset(os.path.join(args.data_dir, x), os.path.join(args.data_dir, x+'_tags.csv'), CHANNELS,
                                           data_transforms[x])
                   for x in ['train', 'val']}
 
@@ -106,7 +106,7 @@ framework = MultiRecognition(recognitron = recognitron, criterion = criterion, o
 if args.transfer_learning:
     framework.recognitron.freeze()
 
-framework.train(num_epochs=args.epochs // 2 if args.fine_tuning else args.epochs, resume_train = args.resume_train)
+framework.train(num_epochs=args.epochs / 2 if args.fine_tuning else args.epochs, resume_train = args.resume_train)
 
 if args.fine_tuning:
     framework.recognitron.unfreeze()

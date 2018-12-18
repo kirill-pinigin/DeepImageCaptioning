@@ -4,12 +4,16 @@ import os
 import torch
 from torch.autograd import Variable
 
-import torchvision
 import numpy as np
+
+IMAGE_SIZE = 224
+CHANNELS = 3
+
 LR_THRESHOLD = 1e-7
 TRYING_LR = 5
 DEGRADATION_TOLERANCY = 5
 ACCURACY_TRESHOLD = float(0.0625)
+
 
 class MultiRecognition(object):
     def __init__(self, recognitron,  criterion, optimizer, dataloaders, directory):
@@ -125,10 +129,10 @@ class MultiRecognition(object):
                     degradation = 0
                     best_loss = epoch_loss
                     print('curent best_loss ', best_loss)
-                    self.save('/BestRecognitron.pth')
+                    self.save('/BestRecognitron')
                 else:
                     counter += 1
-                    self.save('/RegualarRecognitron.pth')
+                    self.save('/RegualarRecognitron')
 
             if counter > TRYING_LR * 2:
                 for param_group in self.optimizer.param_groups:
@@ -191,11 +195,13 @@ class MultiRecognition(object):
 
     def save(self, model):
         self.recognitron = self.recognitron.cpu()
-        torch.save(self.recognitron.state_dict(), self.modelPath + '/' + model)
+        x = Variable(torch.zeros(1,3, 224, 224))
+        torch_out = torch.onnx._export(self.recognitron, x,self.modelPath + '/' + model + ".onnx", export_params=True)
+        torch.save(self.recognitron.state_dict(), self.modelPath + '/' + model + ".pth")
+
         if self.use_gpu:
             self.recognitron = self.recognitron.cuda()
 
-import numpy as np
 
 class MultiLabelLoss(torch.nn.Module):
     def __init__(self, channels =3):
