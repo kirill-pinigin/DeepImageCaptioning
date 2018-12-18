@@ -13,8 +13,8 @@ from SqueezeRecognitrons import  SqueezeResidualRecognitron
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir',          type = str,   default='/home/user/CocoDatasetTags/', help='path to dataset')
 parser.add_argument('--result_dir',        type = str,   default='./RESULTS/', help='path to result')
-parser.add_argument('--recognitron',       type = str,   default='ResidualRecognitron', help='type of image generator')
-parser.add_argument('--activation',        type = str,   default='ReLU', help='type of activation')
+parser.add_argument('--recognitron',       type = str,   default='SqueezeResidualRecognitron', help='type of image generator')
+parser.add_argument('--activation',        type = str,   default='SiLU', help='type of activation')
 parser.add_argument('--criterion',         type = str,   default='MultiLabelLoss', help='type of criterion')
 parser.add_argument('--optimizer',         type = str,   default='Adam', help='type of optimizer')
 parser.add_argument('--type_norm',         type = str,   default='batch', help='type of optimizer')
@@ -25,12 +25,9 @@ parser.add_argument('--batch_size',        type = int,   default=32)
 parser.add_argument('--epochs',            type = int,   default=32)
 parser.add_argument('--augmentation',      type = bool,  default=True)
 parser.add_argument('--pretrained',        type = bool,  default=True)
-parser.add_argument('--transfer_learning', type = bool,  default=True)
+parser.add_argument('--transfer_learning', type = bool,  default=False)
 parser.add_argument('--fine_tuning',       type = bool,  default=True)
 parser.add_argument('--resume_train',      type = bool,  default=True)
-
-#IMAGE_SIZE = 224
-#CHANNELS = 3
 
 args = parser.parse_args()
 
@@ -81,7 +78,7 @@ val_transforms_list = [
 train_transforms_list = val_transforms_list
 
 if args.augmentation:
-    train_transforms_list = [transforms.RandomHorizontalFlip(),transforms.ColorJitter(0.1, 0.1, 0.1, 0.1),] + val_transforms_list
+    train_transforms_list = [transforms.RandomHorizontalFlip(),transforms.ColorJitter(0.2, 0.2, 0.2, 0.2),] + val_transforms_list
 
 
 data_transforms = {

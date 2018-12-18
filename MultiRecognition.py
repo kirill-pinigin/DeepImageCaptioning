@@ -197,18 +197,19 @@ class MultiRecognition(object):
             running_loss += loss.item() * inputs.size(0)
             running_corrects += (1.0 - torch.sum(diff) / float(diff.shape[1] * diff.shape[0])) * inputs.size(0)
 
-            result = torch.round(outputs).data.cpu().numpy()
-            result = np.squeeze(result)
-            indexes = np.nonzero(result)
-            image = inputs.clone()
-            image = image.data.cpu().float()
-            counter = counter + 1
-            filename = self.images + '/' + str(counter)
-            labels = tags[indexes]
-            for l in labels:
-                filename += '_' + str(l) + '_'
-            filename+='.png'
-            torchvision.utils.save_image(image, filename)
+            if isSaveImages and test_loader.batch_size == 1:
+                result = torch.round(outputs).data.cpu().numpy()
+                result = np.squeeze(result)
+                indexes = np.nonzero(result)
+                image = inputs.clone()
+                image = image.data.cpu().float()
+                counter = counter + 1
+                filename = self.images + '/' + str(counter)
+                labels = tags[indexes]
+                for l in labels:
+                    filename += '_' + str(l) + '_'
+                filename+='.png'
+                torchvision.utils.save_image(image, filename)
 
         epoch_loss = float(running_loss) / float(len(test_loader.dataset))
         epoch_acc = float(running_corrects) / float(len(test_loader.dataset))
