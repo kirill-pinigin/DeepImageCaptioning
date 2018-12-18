@@ -43,7 +43,7 @@ class CSVDataset(Dataset):
         return self.data_len
 
     def tags(self):
-        return self.tags_list[1:]
+        return np.asarray(self.tags_list[1:])
 
     def files(self):
         return self.image_arr

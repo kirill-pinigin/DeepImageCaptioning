@@ -3,7 +3,7 @@ import sys
 import os
 import torch
 from torch.autograd import Variable
-
+import torchvision
 import numpy as np
 
 IMAGE_SIZE = 224
@@ -13,6 +13,15 @@ LR_THRESHOLD = 1e-7
 TRYING_LR = 5
 DEGRADATION_TOLERANCY = 5
 ACCURACY_TRESHOLD = float(0.0625)
+
+def imshow(inp, title=None):
+    """Imshow for Tensor."""
+    inp = inp.numpy().transpose((1, 2, 0))
+    inp = np.clip(inp, 0, 1)
+    plt.imshow(inp)
+    if title is not None:
+        plt.title(title)
+    plt.pause(0.001)  # pause a bit so that plots are updated
 
 
 class MultiRecognition(object):
@@ -153,7 +162,10 @@ class MultiRecognition(object):
         print('Best val best_loss: {:4f}'.format(best_loss))
         return best_loss
 
-    def evaluate(self, test_loader, modelPath=None):
+
+    def evaluate(self, test_loader, isSaveImages = True, modelPath=None):
+        tags = test_loader.dataset.tags()
+        counter = 0
         if modelPath is not None:
             self.recognitron.load_state_dict(torch.load(modelPath))
             print('load recognitron model')
@@ -177,11 +189,26 @@ class MultiRecognition(object):
                 targets = Variable(targets.cuda())
             else:
                 inputs, targets = Variable(inputs), Variable(targets)
+
+
             outputs = self.recognitron(inputs)
             diff = torch.abs(targets.data - torch.round(outputs.data))
             loss = self.criterion(outputs, targets)
             running_loss += loss.item() * inputs.size(0)
             running_corrects += (1.0 - torch.sum(diff) / float(diff.shape[1] * diff.shape[0])) * inputs.size(0)
+
+            result = torch.round(outputs).data.cpu().numpy()
+            result = np.squeeze(result)
+            indexes = np.nonzero(result)
+            image = inputs.clone()
+            image = image.data.cpu().float()
+            counter = counter + 1
+            filename = self.images + '/' + str(counter)
+            labels = tags[indexes]
+            for l in labels:
+                filename += '_' + str(l) + '_'
+            filename+='.png'
+            torchvision.utils.save_image(image, filename)
 
         epoch_loss = float(running_loss) / float(len(test_loader.dataset))
         epoch_acc = float(running_corrects) / float(len(test_loader.dataset))
@@ -195,7 +222,7 @@ class MultiRecognition(object):
 
     def save(self, model):
         self.recognitron = self.recognitron.cpu()
-        x = Variable(torch.zeros(1,3, 224, 224))
+        x = Variable(torch.zeros(1, CHANNELS, IMAGE_SIZE, IMAGE_SIZE))
         torch_out = torch.onnx._export(self.recognitron, x,self.modelPath + '/' + model + ".onnx", export_params=True)
         torch.save(self.recognitron.state_dict(), self.modelPath + '/' + model + ".pth")
 
