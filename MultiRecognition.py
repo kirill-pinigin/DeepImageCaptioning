@@ -172,6 +172,7 @@ class MultiRecognition(object):
         else:
             self.recognitron.load_state_dict(torch.load(self.modelPath + 'BestRecognitron.pth'))
             print('load BestRecognitron ')
+        self.convert_static_graph(modelPath)
         print(len(test_loader.dataset))
         i = 0
         since = time.time()
@@ -229,6 +230,44 @@ class MultiRecognition(object):
 
         if self.use_gpu:
             self.recognitron = self.recognitron.cuda()
+
+    def convert_static_graph(self, modelPath=None):
+        import onnx
+        import caffe2.python.onnx.backend as onnx_caffe2_backend
+
+        if modelPath is not None:
+            self.recognitron.load_state_dict(torch.load(modelPath))
+            print('load recognitron model')
+        else:
+            self.recognitron.load_state_dict(torch.load(self.modelPath + 'BestRecognitron.pth'))
+            print('load BestRecognitron ')
+            modelPath = 'BestRecognitron'
+
+        self.recognitron = self.recognitron.cpu()
+        self.recognitron = self.recognitron.eval()
+        x = Variable(torch.zeros(1, CHANNELS, IMAGE_SIZE, IMAGE_SIZE))
+        torch_out = torch.onnx._export(self.recognitron, x, self.modelPath + '/' + modelPath + ".onnx", export_params=True)
+
+        model = onnx.load( self.modelPath + '/' + modelPath + ".onnx")
+        prepared_backend = onnx_caffe2_backend.prepare(model)
+
+        W = {model.graph.input[0].name: x.data.numpy()}
+        c2_out = prepared_backend.run(W)[0]
+        np.testing.assert_almost_equal(torch_out.data.cpu().numpy(), c2_out, decimal=3)
+
+        print("Exported model has been executed on Caffe2 backend, and the result looks good!")
+
+        c2_workspace = prepared_backend.workspace
+        c2_model = prepared_backend.predict_net
+
+        from caffe2.python.predictor import mobile_exporter
+
+        init_net, predict_net = mobile_exporter.Export(c2_workspace, c2_model, c2_model.external_input)
+
+        with open(self.modelPath + modelPath + 'Init.dat', "wb") as fopen:
+            fopen.write(init_net.SerializeToString())
+        with open(self.modelPath + modelPath + 'Predict.dat', "wb") as fopen:
+            fopen.write(predict_net.SerializeToString())
 
 
 class MultiLabelLoss(torch.nn.Module):
