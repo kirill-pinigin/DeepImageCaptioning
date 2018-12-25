@@ -16,17 +16,9 @@ class SiLU(torch.nn.Module):
         return out
 
 
-class EmptyNorm(torch.nn.Module):
-    def __init__(self):
-        super(EmptyNorm, self).__init__()
-
-    def forward(self, x):
-        return x
-
-
 class FireConvNorm(nn.Module):
     def __init__(self, inplanes=128, squeeze_planes=11,
-                 expand1x1_planes=11, expand3x3_planes=11, activation = nn.ReLU(), type_norm = 'batch'):
+                 expand1x1_planes=11, expand3x3_planes=11, activation = nn.ReLU()):
         super(FireConvNorm, self).__init__()
         self.outplanes = int(expand1x1_planes + expand3x3_planes)
         self.squeeze = nn.Conv2d(inplanes, squeeze_planes, kernel_size=1)
@@ -36,33 +28,15 @@ class FireConvNorm(nn.Module):
                                    kernel_size=1)
         self.expand3x3 = nn.Conv2d(squeeze_planes, expand3x3_planes,
                                    kernel_size=3, padding=1)
-        self.type_norm = type_norm
-        if self.type_norm == 'instance':
-            self.norm_sq = nn.InstanceNorm2d(squeeze_planes)
-            self.norm1x1 = nn.InstanceNorm2d(expand1x1_planes)
-            self.norm3x3 = nn.InstanceNorm2d(expand3x3_planes)
-        elif self.type_norm == 'batch':
-            self.norm_sq = nn.BatchNorm2d(squeeze_planes)
-            self.norm1x1 = nn.BatchNorm2d(expand1x1_planes)
-            self.norm3x3 = nn.BatchNorm2d(expand3x3_planes)
-        else:
-            self.norm_sq = EmptyNorm()
-            self.norm1x1 = EmptyNorm()
-            self.norm3x3 = EmptyNorm()
+
+        self.norm_sq = nn.BatchNorm2d(squeeze_planes)
+        self.norm1x1 = nn.BatchNorm2d(expand1x1_planes)
+        self.norm3x3 = nn.BatchNorm2d(expand3x3_planes)
 
     def ConfigureNorm(self):
-        if self.type_norm == 'instance':
-            self.norm_sq = nn.InstanceNorm2d(self.squeeze.out_channels)
-            self.norm1x1 = nn.InstanceNorm2d(self.expand1x1.out_channels)
-            self.norm3x3 = nn.InstanceNorm2d(self.expand3x3.out_channels)
-        elif self.type_norm == 'batch':
-            self.norm_sq = nn.BatchNorm2d(self.squeeze.out_channels)
-            self.norm1x1 = nn.BatchNorm2d(self.expand3x3.out_channels)
-            self.norm3x3 = nn.BatchNorm2d(self.expand3x3.out_channels)
-        else:
-            self.norm_sq = EmptyNorm()
-            self.norm1x1 = EmptyNorm()
-            self.norm3x3 = EmptyNorm()
+        self.norm_sq = nn.BatchNorm2d(self.squeeze.out_channels)
+        self.norm1x1 = nn.BatchNorm2d(self.expand3x3.out_channels)
+        self.norm3x3 = nn.BatchNorm2d(self.expand3x3.out_channels)
 
     def forward(self, x):
         x = self.activation(self.norm_sq(self.squeeze(x)))
@@ -72,33 +46,25 @@ class FireConvNorm(nn.Module):
 
 
 class SqueezeSimpleRecognitron(nn.Module):
-    def __init__(self, channels= 3, dimension = 35, activation = nn.ReLU(), type_norm = 'batch', pretrained = True):
+    def __init__(self, channels= 3, dimension = 35, activation = nn.ReLU(), pretrained = True):
         super(SqueezeSimpleRecognitron, self).__init__()
         self.activation = activation
         self.dimension = dimension
-        if type_norm == 'instance':
-            first_norm_layer = nn.InstanceNorm2d(96)
-            final_norm_layer = nn.InstanceNorm2d(LATENT_DIM)
-        elif type_norm == 'batch':
-            first_norm_layer = nn.BatchNorm2d(96)
-            final_norm_layer = nn.BatchNorm2d(dimension)
-        else:
-            first_norm_layer = EmptyNorm()
-            final_norm_layer = EmptyNorm()
-
+        first_norm_layer = nn.BatchNorm2d(96)
+        final_norm_layer = nn.BatchNorm2d(dimension)
         self.conv1 = nn.Conv2d(channels, 96, kernel_size=7, stride=2)
         self.norm1 = first_norm_layer
         self.downsample1 = nn.MaxPool2d(kernel_size=3, stride=2)
-        self.fire1 = FireConvNorm(96, 16, 64, 64, activation=activation, type_norm=type_norm)
-        self.fire2 = FireConvNorm(128, 16, 64, 64, activation=activation, type_norm=type_norm)
-        self.fire3 = FireConvNorm(128, 32, 128, 128, activation=activation, type_norm=type_norm)
+        self.fire1 = FireConvNorm(96, 16, 64, 64, activation=activation)
+        self.fire2 = FireConvNorm(128, 16, 64, 64, activation=activation)
+        self.fire3 = FireConvNorm(128, 32, 128, 128, activation=activation)
         self.downsample2 = nn.MaxPool2d(kernel_size=3, stride=2)
-        self.fire4 = FireConvNorm(256, 32, 128, 128, activation=activation, type_norm=type_norm)
-        self.fire5 = FireConvNorm(256, 48, 192, 192, activation=activation, type_norm=type_norm)
-        self.fire6 = FireConvNorm(384, 48, 192, 192, activation=activation, type_norm=type_norm)
-        self.fire7 = FireConvNorm(384, 64, 256, 256, activation=activation, type_norm=type_norm)
+        self.fire4 = FireConvNorm(256, 32, 128, 128, activation=activation)
+        self.fire5 = FireConvNorm(256, 48, 192, 192, activation=activation)
+        self.fire6 = FireConvNorm(384, 48, 192, 192, activation=activation)
+        self.fire7 = FireConvNorm(384, 64, 256, 256, activation=activation)
         self.downsample3 = nn.MaxPool2d(kernel_size=3, stride=2)
-        self.fire8 = FireConvNorm(512, 64, 256, 256, activation=activation, type_norm=type_norm)
+        self.fire8 = FireConvNorm(512, 64, 256, 256, activation=activation)
         if pretrained:
             model = models.squeezenet1_0(pretrained=True).features
             if channels == 3:
@@ -181,7 +147,7 @@ class SqueezeSimpleRecognitron(nn.Module):
 
     def freeze(self):
         for m in self.modules():
-            if isinstance(m, nn.BatchNorm2d) or  isinstance(m, nn.InstanceNorm2d):
+            if isinstance(m, nn.BatchNorm2d):
                 for param in m.parameters():
                     param.requires_grad = True
             else:
@@ -198,14 +164,9 @@ class SqueezeSimpleRecognitron(nn.Module):
 
 
 class SqueezeResidualRecognitron(SqueezeSimpleRecognitron):
-    def __init__(self, channels=3, dimension=35, activation=nn.ReLU(), type_norm='batch', pretrained=True):
-        super(SqueezeResidualRecognitron, self).__init__(channels, dimension, activation, type_norm, pretrained)
-        if type_norm == 'instance':
-            final_norm_layer = nn.InstanceNorm2d(LATENT_DIM)
-        elif type_norm == 'batch':
-            final_norm_layer = nn.BatchNorm2d(LATENT_DIM)
-        else:
-            final_norm_layer = EmptyNorm()
+    def __init__(self, channels=3, dimension=35, activation=nn.ReLU(), pretrained=True):
+        super(SqueezeResidualRecognitron, self).__init__(channels, dimension, activation, pretrained)
+        final_norm_layer = nn.BatchNorm2d(LATENT_DIM)
 
         self.features = nn.Sequential(
             nn.Dropout(p=0.5),
@@ -216,7 +177,8 @@ class SqueezeResidualRecognitron(SqueezeSimpleRecognitron):
         )
 
         reduce_number = int((LATENT_DIM + dimension) / 2.0)
-        sub_dimension = reduce_number if reduce_number < dimension else (reduce_number + dimension)
+        sub_dimension = reduce_number if reduce_number > dimension else (reduce_number + dimension)
+
         self.recognitron = nn.Sequential(
             nn.Linear(LATENT_DIM, sub_dimension),
             activation,

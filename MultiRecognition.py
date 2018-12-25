@@ -8,30 +8,20 @@ import numpy as np
 
 IMAGE_SIZE = 224
 CHANNELS = 3
+DIMENSION = 80
 
 LR_THRESHOLD = 1e-7
 TRYING_LR = 5
 DEGRADATION_TOLERANCY = 5
 ACCURACY_TRESHOLD = float(0.0625)
 
-def imshow(inp, title=None):
-    """Imshow for Tensor."""
-    inp = inp.numpy().transpose((1, 2, 0))
-    inp = np.clip(inp, 0, 1)
-    plt.imshow(inp)
-    if title is not None:
-        plt.title(title)
-    plt.pause(0.001)  # pause a bit so that plots are updated
-
 
 class MultiRecognition(object):
-    def __init__(self, recognitron,  criterion, optimizer, dataloaders, directory):
+    def __init__(self, recognitron,  criterion, optimizer, directory):
         self.recognitron = recognitron
         self.criterion = criterion
         self.optimizer = optimizer
         self.use_gpu = torch.cuda.is_available()
-        self.dataloaders = dataloaders
-
         config = str(recognitron.__class__.__name__) + '_' + str(recognitron.activation.__class__.__name__) #+ '_' + str(recognitron.norm1.__class__.__name__)
         if str(recognitron.__class__.__name__) == 'ResidualRecognitron':
             config += str(recognitron.model.conv1)
@@ -71,7 +61,7 @@ class MultiRecognition(object):
     def __del__(self):
         self.report.close()
 
-    def train(self, num_epochs = 20, resume_train = False):
+    def fit(self, dataloaders, num_epochs = 20, resume_train = False):
         if resume_train and os.path.isfile(self.modelPath + 'BestRecognitron.pth'):
             print( "RESUME training load BestRecognitron")
             self.recognitron.load_state_dict(torch.load(self.modelPath + 'BestRecognitron.pth'))
@@ -100,7 +90,7 @@ class MultiRecognition(object):
 
                 running_loss = 0.0
                 running_corrects = 0
-                for data in self.dataloaders[phase]:
+                for data in dataloaders[phase]:
                     inputs, targets = data
                     if self.use_gpu:
                         inputs = Variable(inputs.cuda())
@@ -119,8 +109,8 @@ class MultiRecognition(object):
                     running_loss += loss.item() * inputs.size(0)
                     running_corrects += (1.0 - torch.sum(diff)/float(diff.shape[1]*diff.shape[0])) * inputs.size(0)
 
-                epoch_loss = float(running_loss) / float(len(self.dataloaders[phase].dataset))
-                epoch_acc = float(running_corrects) / float(len(self.dataloaders[phase].dataset))
+                epoch_loss = float(running_loss) / float(len(dataloaders[phase].dataset))
+                epoch_acc = float(running_corrects) / float(len(dataloaders[phase].dataset))
 
                 _stdout = sys.stdout
                 sys.stdout = self.report
@@ -172,7 +162,6 @@ class MultiRecognition(object):
         else:
             self.recognitron.load_state_dict(torch.load(self.modelPath + 'BestRecognitron.pth'))
             print('load BestRecognitron ')
-        self.convert_static_graph(modelPath)
         print(len(test_loader.dataset))
         i = 0
         since = time.time()
@@ -190,7 +179,6 @@ class MultiRecognition(object):
                 targets = Variable(targets.cuda())
             else:
                 inputs, targets = Variable(inputs), Variable(targets)
-
 
             outputs = self.recognitron(inputs)
             diff = torch.abs(targets.data - torch.round(outputs.data))
@@ -230,44 +218,6 @@ class MultiRecognition(object):
 
         if self.use_gpu:
             self.recognitron = self.recognitron.cuda()
-
-    def convert_static_graph(self, modelPath=None):
-        import onnx
-        import caffe2.python.onnx.backend as onnx_caffe2_backend
-
-        if modelPath is not None:
-            self.recognitron.load_state_dict(torch.load(modelPath))
-            print('load recognitron model')
-        else:
-            self.recognitron.load_state_dict(torch.load(self.modelPath + 'BestRecognitron.pth'))
-            print('load BestRecognitron ')
-            modelPath = 'BestRecognitron'
-
-        self.recognitron = self.recognitron.cpu()
-        self.recognitron = self.recognitron.eval()
-        x = Variable(torch.zeros(1, CHANNELS, IMAGE_SIZE, IMAGE_SIZE))
-        torch_out = torch.onnx._export(self.recognitron, x, self.modelPath + '/' + modelPath + ".onnx", export_params=True)
-
-        model = onnx.load( self.modelPath + '/' + modelPath + ".onnx")
-        prepared_backend = onnx_caffe2_backend.prepare(model)
-
-        W = {model.graph.input[0].name: x.data.numpy()}
-        c2_out = prepared_backend.run(W)[0]
-        np.testing.assert_almost_equal(torch_out.data.cpu().numpy(), c2_out, decimal=3)
-
-        print("Exported model has been executed on Caffe2 backend, and the result looks good!")
-
-        c2_workspace = prepared_backend.workspace
-        c2_model = prepared_backend.predict_net
-
-        from caffe2.python.predictor import mobile_exporter
-
-        init_net, predict_net = mobile_exporter.Export(c2_workspace, c2_model, c2_model.external_input)
-
-        with open(self.modelPath + modelPath + 'Init.dat', "wb") as fopen:
-            fopen.write(init_net.SerializeToString())
-        with open(self.modelPath + modelPath + 'Predict.dat', "wb") as fopen:
-            fopen.write(predict_net.SerializeToString())
 
 
 class MultiLabelLoss(torch.nn.Module):

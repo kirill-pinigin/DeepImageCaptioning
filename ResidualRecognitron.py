@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-
 from torchvision import models
 
 
@@ -12,15 +11,9 @@ class SiLU(torch.nn.Module):
         out = torch.mul(x, torch.sigmoid(x))
         return out
 
-class EmptyNorm(torch.nn.Module):
-    def __init__(self):
-        super(EmptyNorm, self).__init__()
-
-    def forward(self, x):
-        return x
 
 class ResidualRecognitron(nn.Module):
-    def __init__(self, channels = 1, dimension=11, activation = SiLU(), type_norm='batch', pretrained = True):
+    def __init__(self, channels = 1, dimension=11, activation = SiLU(), pretrained = True):
         super(ResidualRecognitron, self).__init__()
         self.activation = activation
 
@@ -34,13 +27,10 @@ class ResidualRecognitron(nn.Module):
             conv.weight.data.copy_(weight)
             self.model.conv1 = conv
 
-        if type_norm == 'instance':
-            self.model.bn1 = nn.InstanceNorm1d(64)
-
         self.model.avgpool = nn.AvgPool2d(7)
         num_ftrs = self.model.fc.in_features
-        reduce_number = int ((num_ftrs + dimension)/2.0)
-        sub_dimension = reduce_number if reduce_number < dimension else (reduce_number + dimension)
+        reduce_number = int((num_ftrs + dimension) / 2.0)
+        sub_dimension = reduce_number if reduce_number > dimension else (reduce_number + dimension)
 
         self.model.fc = nn.Sequential(
             nn.Linear(num_ftrs, sub_dimension),
