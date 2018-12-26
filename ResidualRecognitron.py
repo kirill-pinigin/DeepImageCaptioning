@@ -29,14 +29,12 @@ class ResidualRecognitron(nn.Module):
 
         self.model.avgpool = nn.AvgPool2d(7)
         num_ftrs = self.model.fc.in_features
-        reduce_number = int((num_ftrs + dimension) / 2.0)
-        sub_dimension = reduce_number if reduce_number > dimension else (reduce_number + dimension)
 
         self.model.fc = nn.Sequential(
-            nn.Linear(num_ftrs, sub_dimension),
+            nn.Linear(num_ftrs, num_ftrs),
             activation,
             nn.Dropout(p=0.5),
-            nn.Linear(sub_dimension, dimension),
+            nn.Linear(num_ftrs, dimension),
             nn.Sigmoid(),
         )
 
