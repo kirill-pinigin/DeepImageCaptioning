@@ -16,18 +16,18 @@ parser.add_argument('--result_dir',        type = str,   default='./RESULTS/', h
 parser.add_argument('--recognitron',       type = str,   default='ResidualRecognitron', help='type of image generator')
 parser.add_argument('--activation',        type = str,   default='ReLU', help='type of activation')
 parser.add_argument('--criterion',         type = str,   default='MultiLabelLoss', help='type of criterion')
-parser.add_argument('--optimizer',         type = str,   default='Adam', help='type of optimizer')
+parser.add_argument('--optimizer',         type = str,   default='RMSprop', help='type of optimizer')
 parser.add_argument('--type_norm',         type = str,   default='batch', help='type of optimizer')
 parser.add_argument('--lr',                type = float, default=2e-5)
-parser.add_argument('--weight_decay',      type = float, default=2e-4)
+parser.add_argument('--weight_decay',      type = float, default=0)
 parser.add_argument('--split',             type = float, default=0.0)
 parser.add_argument('--batch_size',        type = int,   default=32)
 parser.add_argument('--epochs',            type = int,   default=64)
 parser.add_argument('--augmentation',      type = bool,  default=True)
 parser.add_argument('--pretrained',        type = bool,  default=True)
 parser.add_argument('--transfer_learning', type = bool,  default=False)
-parser.add_argument('--fine_tuning',       type = bool,  default=True)
-parser.add_argument('--resume_train',      type = bool,  default=False)
+parser.add_argument('--fine_tuning',       type = bool,  default=False)
+parser.add_argument('--resume_train',      type = bool,  default=True)
 
 args = parser.parse_args()
 
@@ -95,7 +95,7 @@ image_datasets = {x: CSVDataset(os.path.join(args.data_dir, x), os.path.join(arg
 
 dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=args.batch_size,shuffle=shuffle_list[x], num_workers=4)  for x in ['train', 'val']}
 
-testloader =  torch.utils.data.DataLoader(image_datasets['val'], batch_size=16, shuffle=False, num_workers=4)
+testloader =  torch.utils.data.DataLoader(image_datasets['val'], batch_size=1, shuffle=False, num_workers=4)
 
 framework = MultiRecognition(recognitron = recognitron, criterion = criterion, optimizer = optimizer, directory = args.result_dir)
 

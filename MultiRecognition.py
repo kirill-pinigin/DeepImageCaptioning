@@ -6,8 +6,8 @@ from torch.autograd import Variable
 import torchvision
 import numpy as np
 
-IMAGE_SIZE = 224
-CHANNELS = 3
+IMAGE_SIZE = 256
+CHANNELS = 1
 DIMENSION = 80
 
 LR_THRESHOLD = 1e-7

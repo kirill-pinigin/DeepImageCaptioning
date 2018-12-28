@@ -18,16 +18,18 @@ class ResidualRecognitron(nn.Module):
         self.activation = activation
 
         self.model = models.resnet18(pretrained=pretrained)
-        if pretrained == True and channels == 1:
-            conv = nn.Conv2d(channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
-            weight = torch.FloatTensor(64, 1, 7, 7)
-            parameters = list(self.model.parameters())
-            for i in range(64):
+        conv = nn.Conv2d(channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        weight = torch.FloatTensor(64, channels, 7, 7)
+        parameters = list(self.model.parameters())
+        for i in range(64):
+            if channels == 1:
                 weight[i, :, :, :] = parameters[0].data[i].mean(0)
-            conv.weight.data.copy_(weight)
-            self.model.conv1 = conv
+            else:
+                weight[i, :, :, :] = parameters[0].data[i]
+        conv.weight.data.copy_(weight)
+        self.model.conv1 = conv
 
-        self.model.avgpool = nn.AvgPool2d(7)
+        self.model.avgpool = nn.AvgPool2d(8)
         num_ftrs = self.model.fc.in_features
 
         self.model.fc = nn.Sequential(
