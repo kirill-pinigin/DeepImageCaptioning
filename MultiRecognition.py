@@ -221,29 +221,29 @@ class MultiRecognition(object):
 
 
 class MultiLabelLoss(torch.nn.Module):
-    def __init__(self, channels =3):
+    def __init__(self):
         super(MultiLabelLoss, self).__init__()
         self.criterion = torch.nn.BCELoss()
-        self.penalty = torch.nn.L1Loss()
+        self.penalty = torch.nn.MSELoss()
         self.loss = None
 
     def forward(self, input, target):
         p = input.data.cpu().numpy()
         t = target.data.cpu().numpy()
-        #positive_input = Variable(torch.from_numpy(p[np.nonzero(t)]))
-        #positive_target = Variable(torch.from_numpy(t[np.nonzero(t)]))
+        positive_input = Variable(torch.from_numpy(p[np.nonzero(t)]))
+        positive_target = Variable(torch.from_numpy(t[np.nonzero(t)]))
         negative_input = Variable(torch.from_numpy(p[np.where(t == 0)]))
         negative_target = Variable(torch.from_numpy(t[np.where(t == 0)]))
         if torch.cuda.is_available():
-            #positive_input  = positive_input .cuda()
-            #positive_target = positive_target.cuda()
+            positive_input  = positive_input .cuda()
+            positive_target = positive_target.cuda()
             negative_input  = negative_input .cuda()
             negative_target = negative_target.cuda()
 
         bce_loss = self.criterion(input, target)
-        #false_positive_penalty = self.penalty(positive_input, positive_target)
+        false_positive_penalty = self.penalty(positive_input, positive_target)
         false_negative_penalty= self.penalty(negative_input, negative_target)
-        self.loss =  bce_loss + false_negative_penalty
+        self.loss =  bce_loss + 0.1*false_negative_penalty + 0.1*false_positive_penalty
         return self.loss
 
     def backward(self, retain_variables=True):
