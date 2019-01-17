@@ -128,10 +128,10 @@ class MultiRecognition(object):
                     degradation = 0
                     best_loss = epoch_loss
                     print('curent best_loss ', best_loss)
-                    self.save('/BestRecognitron')
+                    self.save('/BestMultiRecognitron')
                 else:
                     counter += 1
-                    self.save('/RegualarRecognitron')
+                    self.save('/RegualarMultiRecognitron')
 
             if counter > TRYING_LR * 2:
                 for param_group in self.optimizer.param_groups:
@@ -158,10 +158,10 @@ class MultiRecognition(object):
         counter = 0
         if modelPath is not None:
             self.recognitron.load_state_dict(torch.load(modelPath))
-            print('load recognitron model')
+            print('load MultiRecognitron model')
         else:
-            self.recognitron.load_state_dict(torch.load(self.modelPath + 'BestRecognitron.pth'))
-            print('load BestRecognitron ')
+            self.recognitron.load_state_dict(torch.load(self.modelPath + 'BestMultiRecognitron.pth'))
+            print('load BestMultiRecognitron ')
         print(len(test_loader.dataset))
         i = 0
         since = time.time()
