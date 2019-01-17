@@ -131,7 +131,7 @@ class MultiRecognition(object):
                     self.save('/BestMultiRecognitron')
                 else:
                     counter += 1
-                    self.save('/RegualarMultiRecognitron')
+                    self.save('/RegularMultiRecognitron')
 
             if counter > TRYING_LR * 2:
                 for param_group in self.optimizer.param_groups:
