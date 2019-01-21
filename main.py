@@ -23,11 +23,10 @@ parser.add_argument('--weight_decay',      type = float, default=0)
 parser.add_argument('--split',             type = float, default=0.0)
 parser.add_argument('--batch_size',        type = int,   default=32)
 parser.add_argument('--epochs',            type = int,   default=64)
-parser.add_argument('--augmentation',      type = bool,  default=True)
 parser.add_argument('--pretrained',        type = bool,  default=True)
 parser.add_argument('--transfer_learning', type = bool,  default=False)
 parser.add_argument('--fine_tuning',       type = bool,  default=False)
-parser.add_argument('--resume_train',      type = bool,  default=True)
+parser.add_argument('--resume_train',      type = bool,  default=False)
 
 args = parser.parse_args()
 
@@ -69,16 +68,19 @@ optimizer =(optimizer_types[args.optimizer] if args.optimizer in optimizer_types
 
 criterion = (criterion_types[args.criterion] if args.criterion in criterion_types else criterion_types['MSE'])
 
+train_transforms_list = [
+        transforms.RandomHorizontalFlip(),
+        #transforms.RandomAffine(degrees=(-20, 20), scale=(0.8, 1.2), resample=Image.BICUBIC),
+        transforms.ColorJitter(0.2, 0.2, 0.2, 0.2),
+        transforms.Resize((int(IMAGE_SIZE * 1.055), int(IMAGE_SIZE * 1.055)), interpolation=3),
+        transforms.RandomCrop((IMAGE_SIZE, IMAGE_SIZE)),
+        transforms.ToTensor(),
+        ]
+
 val_transforms_list = [
         transforms.Resize((IMAGE_SIZE, IMAGE_SIZE), interpolation=3),
         transforms.ToTensor(),
         ]
-
-train_transforms_list = val_transforms_list
-
-if args.augmentation:
-    train_transforms_list = [transforms.RandomHorizontalFlip(), transforms.RandomAffine(degrees=(-30, 30), shear=(0.2, 0.2), resample=Image.BICUBIC), transforms.ColorJitter(0.2, 0.2, 0.2, 0.2),] + val_transforms_list
-
 
 data_transforms = {
     'train':    transforms.Compose(train_transforms_list ),
