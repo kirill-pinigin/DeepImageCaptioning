@@ -2,18 +2,10 @@ import torch
 import torch.nn as nn
 from torchvision import  models
 import torch.nn.init as init
+from NeuralModels import SILU, Perceptron
 
 LATENT_DIM = int(512)
 LATENT_DIM_2 = int(LATENT_DIM // 2) if LATENT_DIM > 2 else 1
-
-
-class SiLU(torch.nn.Module):
-    def __init__(self):
-        super(SiLU, self).__init__()
-
-    def forward(self, x):
-        out = torch.mul(x, torch.sigmoid(x))
-        return out
 
 
 class FireConvNorm(nn.Module):
@@ -180,10 +172,10 @@ class SqueezeResidualRecognitron(SqueezeSimpleRecognitron):
         sub_dimension = reduce_number if reduce_number > dimension else (reduce_number + dimension)
 
         self.recognitron = nn.Sequential(
-            nn.Linear(LATENT_DIM, sub_dimension),
+            Perceptron(LATENT_DIM, sub_dimension),
             activation,
             nn.Dropout(p=0.5),
-            nn.Linear(sub_dimension, dimension),
+            Perceptron(sub_dimension, dimension),
             nn.Sigmoid(),
         )
 
@@ -208,7 +200,6 @@ class SqueezeResidualRecognitron(SqueezeSimpleRecognitron):
         x = self.fire8(d3)
         x = torch.add(x, d3)
         x = self.features(x)
-        x = x.view(x.size(0), -1)
         x = self.recognitron(x)
         return x
 

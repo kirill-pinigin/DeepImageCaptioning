@@ -7,13 +7,15 @@ import torchvision.transforms as transforms
 from  CSVDataset import  CSVDataset
 from PIL import Image
 from MultiRecognition import MultiRecognition , MultiLabelLoss, IMAGE_SIZE, CHANNELS, DIMENSION
-from ResidualRecognitron import  ResidualRecognitron, SiLU
+from NeuralModels import SILU, Perceptron
+from ResidualRecognitron import  ResidualRecognitron
 from SqueezeRecognitrons import  SqueezeResidualRecognitron
+from MobileRecognitron import MobileRecognitron
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir',          type = str,   default='/home/user/CocoDatasetTags/', help='path to dataset')
 parser.add_argument('--result_dir',        type = str,   default='./RESULTS/', help='path to result')
-parser.add_argument('--recognitron',       type = str,   default='ResidualRecognitron', help='type of image generator')
+parser.add_argument('--recognitron',       type = str,   default='MobileRecognitron', help='type of image generator')
 parser.add_argument('--activation',        type = str,   default='ReLU', help='type of activation')
 parser.add_argument('--criterion',         type = str,   default='BCE', help='type of criterion')
 parser.add_argument('--optimizer',         type = str,   default='Adam', help='type of optimizer')
@@ -31,8 +33,9 @@ parser.add_argument('--resume_train',      type = bool,  default=False)
 args = parser.parse_args()
 
 recognitron_types = {
-                        'ResidualRecognitron'                : ResidualRecognitron,
-                        'SqueezeResidualRecognitron'         : SqueezeResidualRecognitron,
+                        'ResidualRecognitron'        : ResidualRecognitron,
+                        'MobileRecognitron'          : MobileRecognitron,
+                        'SqueezeResidualRecognitron' : SqueezeResidualRecognitron,
                     }
 
 activation_types =  {
@@ -41,7 +44,7 @@ activation_types =  {
                         'PReLU'    : nn.PReLU(),
                         'ELU'      : nn.ELU(),
                         'SELU'     : nn.SELU(),
-                        'SiLU'     : SiLU()
+                        'SILU'     : SILU()
                     }
 
 criterion_types =   {
@@ -70,7 +73,7 @@ criterion = (criterion_types[args.criterion] if args.criterion in criterion_type
 
 train_transforms_list = [
         transforms.RandomHorizontalFlip(),
-        #transforms.RandomAffine(degrees=(-20, 20), scale=(0.8, 1.2), resample=Image.BICUBIC),
+        transforms.RandomAffine(degrees=(-30, 30), scale=(0.8, 1.2), resample=Image.BICUBIC),
         transforms.ColorJitter(0.2, 0.2, 0.2, 0.2),
         transforms.Resize((int(IMAGE_SIZE * 1.055), int(IMAGE_SIZE * 1.055)), interpolation=3),
         transforms.RandomCrop((IMAGE_SIZE, IMAGE_SIZE)),
